@@ -8,4 +8,4 @@ PGP_PUB_ENCRYPT_SQL = "pgp_pub_encrypt(%s, dearmor('{}'))"
 PGP_SYM_ENCRYPT_SQL = "pgp_sym_encrypt(%s, '{}')"
 
 PGP_PUB_DECRYPT_SQL = "pgp_pub_decrypt(%s, dearmor('{}'))::%s"
-PGP_SYM_DECRYPT_SQL = "pgp_sym_decrypt(%s, '{}')::%s"
+PGP_SYM_DECRYPT_SQL = "pgp_sym_decrypt(%s, %s.id::text)::%s"

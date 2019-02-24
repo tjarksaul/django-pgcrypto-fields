@@ -24,7 +24,7 @@ DIFF_PRIVATE_PGP_KEY_PATH = os.path.abspath(
 )
 
 diff_keys = dj_database_url.config(
-    default='postgres://localhost/pgcrypto_fields_diff'
+    default='postgres://bwkuser:bwk123asdqwe@localhost/pgcrypto_fields_diff'
 )
 
 # Cannot chain onto the config() call due to error
@@ -37,7 +37,7 @@ diff_keys.update({
 settings.configure(
     DATABASES={
         'default': dj_database_url.config(
-            default='postgres://localhost/pgcrypto_fields'
+            default='postgres://bwkuser:bwk123asdqwe@localhost/pgcrypto_fields'
         ),
         'diff_keys': diff_keys,
     },
