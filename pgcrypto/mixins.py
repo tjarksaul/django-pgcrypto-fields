@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db.models.expressions import Col
 from django.utils.functional import cached_property
+import redis
 
 from pgcrypto import (
     PGP_SYM_DECRYPT_SQL,
@@ -98,7 +99,6 @@ class PGPMixin:
 
         return super(PGPMixin, self).pre_save(model_instance, add)
 
-
     def get_cast_sql(self):
         """Get cast sql. This may be overidden by some implementations."""
         return self.cast_type
@@ -128,6 +128,7 @@ class PGPMixin:
             self
         )
 
+
 class PGPSymmetricKeyFieldMixin(PGPMixin):
     """PGP symmetric key encrypted field mixin for postgres."""
     encrypt_sql = PGP_SYM_ENCRYPT_SQL
@@ -136,15 +137,28 @@ class PGPSymmetricKeyFieldMixin(PGPMixin):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.key = None # todo: perhaps default key?
+        self.key = None  # todo: perhaps default key?
 
     def pre_save(self, model_instance, add):
         """Save the original_value."""
         key_id = getattr(model_instance, "pk")
-        self.key = key_id # todo: replace by lookup in key-table. Should use uuid there
+
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("select key from key_store where id = %s::text", (key_id,))
+            row = cursor.fetchone()
+            if row is None:
+                self.key = self.generate_key()
+                r = redis.Redis(host='localhost', port=6379, db=0) # todo: konfigurierbar
+                r.set(str(key_id), self.key)
+            else:
+                self.key = row[0]
 
         return super(PGPSymmetricKeyFieldMixin, self).pre_save(model_instance, add)
 
+    @staticmethod
+    def generate_key():
+        return "really random key"  # todo: generate cryptographically secure key
 
     def get_placeholder(self, value, compiler, connection):
         """Tell postgres to encrypt this field using PGP."""
@@ -152,7 +166,7 @@ class PGPSymmetricKeyFieldMixin(PGPMixin):
 
     def get_decrypt_sql(self, connection):
         """Get decrypt sql."""
-        return self.decrypt_sql#.format(self.key) # todo: hier muss ein select aus der jeweiligen key-table passieren
+        return self.decrypt_sql  # .format(self.key)
 
 
 class DecimalPGPFieldMixin:

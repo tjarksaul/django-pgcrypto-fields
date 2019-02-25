@@ -1,11 +1,10 @@
-import uuid
 from datetime import date, datetime
 from decimal import Decimal
 from unittest.mock import MagicMock
 
 from django import VERSION as DJANGO_VERSION
 from django.conf import settings
-from django.db import connections, models, reset_queries
+from django.db import models, reset_queries
 from django.test import TestCase
 from incuna_test_utils.utils import field_names
 
