@@ -1,7 +1,10 @@
+from base64 import b64encode
+from os import urandom
+
+import redis
 from django.conf import settings
 from django.db.models.expressions import Col
 from django.utils.functional import cached_property
-import redis
 
 from pgcrypto import (
     PGP_SYM_DECRYPT_SQL,
@@ -158,11 +161,12 @@ class PGPSymmetricKeyFieldMixin(PGPMixin):
 
     @staticmethod
     def generate_key():
-        return "really random key"  # todo: generate cryptographically secure key
+        return b64encode(urandom(32)).decode('utf-8')
 
     def get_placeholder(self, value, compiler, connection):
         """Tell postgres to encrypt this field using PGP."""
-        return self.encrypt_sql.format(self.key)
+        val = self.encrypt_sql.format(self.key)
+        return val
 
     def get_decrypt_sql(self, connection):
         """Get decrypt sql."""
