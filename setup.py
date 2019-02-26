@@ -29,7 +29,7 @@ with open('README.md') as readme_file:
 with open('CHANGELOG.md') as changelog_file:
     changelog = changelog_file.read()
 
-version = '2.5.1'
+version = '2.5.2'
 
 setup(
     name='django-pgcrypto-fields',
@@ -41,6 +41,7 @@ setup(
     description='Encrypted fields for Django dealing with pgcrypto postgres extension.',
     long_description=readme + '\n\n' + changelog,
     long_description_content_type='text/markdown',
+    install_requires=['redis'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Framework :: Django',
