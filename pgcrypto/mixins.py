@@ -132,6 +132,12 @@ class PGPMixin:
         )
 
 
+class Encryption:
+    @classmethod
+    def generate_key(cls):
+        return b64encode(urandom(32)).decode('utf-8')
+
+
 class PGPSymmetricKeyFieldMixin(PGPMixin):
     """PGP symmetric key encrypted field mixin for postgres."""
     encrypt_sql = PGP_SYM_ENCRYPT_SQL
@@ -151,17 +157,13 @@ class PGPSymmetricKeyFieldMixin(PGPMixin):
             cursor.execute("select key from key_store where id = %s::text", (key_id,))
             row = cursor.fetchone()
             if row is None:
-                self.key = self.generate_key()
+                self.key = Encryption.generate_key()
                 r = redis.Redis(host='redis', port=6379, db=0) # todo: konfigurierbar
                 r.set(str(key_id), self.key)
             else:
                 self.key = row[0]
 
         return super(PGPSymmetricKeyFieldMixin, self).pre_save(model_instance, add)
-
-    @staticmethod
-    def generate_key():
-        return b64encode(urandom(32)).decode('utf-8')
 
     def get_placeholder(self, value, compiler, connection):
         """Tell postgres to encrypt this field using PGP."""

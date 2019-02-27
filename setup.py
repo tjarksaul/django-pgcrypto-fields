@@ -1,3 +1,4 @@
+import re
 import sys
 
 from setuptools import find_packages, setup
@@ -21,15 +22,26 @@ have pip >= 9.0 and setuptools >= 24.2, then try again:
 """.format(*(REQUIRED_PYTHON + CURRENT_PYTHON)))
     sys.exit(1)
 
-
 with open('README.md') as readme_file:
     readme = readme_file.read()
-
 
 with open('CHANGELOG.md') as changelog_file:
     changelog = changelog_file.read()
 
-version = '2.5.2'
+version = '2.5.3'
+
+
+def get_requirements():
+    with open("requirements.txt") as f:
+        requirements = []
+        regex = re.compile("^([^ ]+) *.*")
+        for line in f:
+            if not line.startswith("#"):
+                m = regex.match(line)
+                if m:
+                    requirements.append(line.strip())
+        return requirements
+
 
 setup(
     name='django-pgcrypto-fields',
