@@ -53,7 +53,7 @@ setup(
     description='Encrypted fields for Django dealing with pgcrypto postgres extension.',
     long_description=readme + '\n\n' + changelog,
     long_description_content_type='text/markdown',
-    install_requires=['redis'],
+    install_requires=get_requirements(),
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Framework :: Django',
