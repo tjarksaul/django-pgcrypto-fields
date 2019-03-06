@@ -24,3 +24,5 @@ def get_bytes(v):
 
 SALT = get_bytes(_get_setting("SALT"))
 FETCH_URL_NAME = _get_setting("FETCH_URL_NAME")
+REDIS_HOST = _get_setting("REDIS_HOST")
+REDIS_PORT = _get_setting("REDIS_PORT")

@@ -17,7 +17,7 @@ from pgcrypto.mixins import (
     DecimalPGPFieldMixin,
     PGPSymmetricKeyFieldMixin,
     Encryption)
-from .constants import FETCH_URL_NAME
+from .constants import FETCH_URL_NAME, REDIS_HOST, REDIS_PORT
 from .crypt import Cryptographer
 
 
@@ -89,7 +89,7 @@ class FileEncryptionMixin(object):
             row = cursor.fetchone()
             if row is None:
                 self.key = Encryption.generate_key()
-                r = redis.Redis(host='redis', port=6379, db=0) # todo: konfigurierbar
+                r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
                 r.set(str(key_id), self.key)
             else:
                 self.key = row[0]
@@ -106,7 +106,7 @@ class FileEncryptionMixin(object):
                 row = cursor.fetchone()
                 if row is None:
                     self.key = Encryption.generate_key()
-                    r = redis.Redis(host='localhost', port=6379, db=0)  # todo: konfigurierbar
+                    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
                     r.set(str(key_id), self.key)
                 else:
                     self.key = row[0]

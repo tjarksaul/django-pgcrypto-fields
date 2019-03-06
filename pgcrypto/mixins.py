@@ -10,6 +10,7 @@ from pgcrypto import (
     PGP_SYM_DECRYPT_SQL,
     PGP_SYM_ENCRYPT_SQL,
 )
+from pgcrypto.constants import REDIS_HOST, REDIS_PORT
 
 
 def get_setting(connection, key):
@@ -158,7 +159,7 @@ class PGPSymmetricKeyFieldMixin(PGPMixin):
             row = cursor.fetchone()
             if row is None:
                 self.key = Encryption.generate_key()
-                r = redis.Redis(host='redis', port=6379, db=0) # todo: konfigurierbar
+                r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
                 r.set(str(key_id), self.key)
             else:
                 self.key = row[0]
