@@ -75,7 +75,7 @@ class FetchView(View):
             if row is None:
                 raise Http404
             else:
-                key = row[0]
+                key = row[0].encode('utf-8')
 
         content = Cryptographer.decrypted(password=key, content=content)
         return HttpResponse(

@@ -97,6 +97,20 @@ class FileEncryptionMixin(object):
         return super(FileEncryptionMixin, self).pre_save(model_instance, add)
 
     def save(self, name, content, save=True):
+        if self.key is None:
+            key_id = getattr(self.instance, "pk")
+
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("select key from key_store where id = %s::text", (key_id,))
+                row = cursor.fetchone()
+                if row is None:
+                    self.key = Encryption.generate_key()
+                    r = redis.Redis(host='localhost', port=6379, db=0)  # todo: konfigurierbar
+                    r.set(str(key_id), self.key)
+                else:
+                    self.key = row[0]
+
         return FieldFile.save(
             self,
             name,
@@ -107,9 +121,9 @@ class FileEncryptionMixin(object):
     save.alters_data = True
 
     def _get_url(self):
-        return reverse(FETCH_URL_NAME, kwargs={
-            "path": super(FileEncryptionMixin, self).url
-        })
+        return "%s?id=%s" % (reverse(FETCH_URL_NAME, kwargs={
+            "path": super(FileEncryptionMixin, self).url,
+        }), str(self.instance.pk))
 
     url = property(_get_url)
 
