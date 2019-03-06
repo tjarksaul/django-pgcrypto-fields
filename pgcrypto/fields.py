@@ -114,7 +114,7 @@ class FileEncryptionMixin(object):
         return FieldFile.save(
             self,
             name,
-            EncryptedFile(content, password=self.key),
+            EncryptedFile(content, password=self.key.encode('utf-8')),
             save=save
         )
 
