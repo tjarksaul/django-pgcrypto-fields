@@ -28,7 +28,7 @@ with open('README.md') as readme_file:
 with open('CHANGELOG.md') as changelog_file:
     changelog = changelog_file.read()
 
-version = '2.6.2'
+version = '2.6.3'
 
 
 def get_requirements():
