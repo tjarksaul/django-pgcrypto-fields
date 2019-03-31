@@ -155,14 +155,17 @@ class PGPSymmetricKeyFieldMixin(PGPMixin):
 
         from django.db import connection
         with connection.cursor() as cursor:
+            print("trying to fetch key for %s", (key_id,))
             cursor.execute("select key from key_store where id = %s::text", (key_id,))
             row = cursor.fetchone()
             if row is None:
+                print("no key found for %s. Creating new one", (key_id,))
                 self.key = Encryption.generate_key()
                 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
                 r.set(str(key_id), self.key, nx=True)
                 self.key = r.get(str(key_id)).decode('utf-8')
             else:
+                print("Loading key from %s", (key_id,))
                 self.key = row[0]
 
         return super(PGPSymmetricKeyFieldMixin, self).pre_save(model_instance, add)
