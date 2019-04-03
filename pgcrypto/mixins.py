@@ -163,7 +163,6 @@ class PGPSymmetricKeyFieldMixin(PGPMixin):
                 self.key = Encryption.generate_key()
                 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
                 r.set(str(key_id), self.key, nx=True)
-                self.key = r.get(str(key_id)).decode('utf-8')
             else:
                 print("Loading key from %s", (key_id,))
                 self.key = row[0]

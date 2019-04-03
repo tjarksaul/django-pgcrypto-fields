@@ -109,7 +109,6 @@ class FileEncryptionMixin(object):
                     self.key = Encryption.generate_key()
                     r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
                     r.set(str(key_id), self.key, nx=True)
-                    self.key = r.get(str(key_id)).decode('utf-8')
                 else:
                     self.key = row[0]
 
