@@ -1,10 +1,13 @@
+import queue
 from base64 import b64encode
 from os import urandom
+from uuid import UUID
 
 import redis
 from django.conf import settings
 from django.db.models.expressions import Col
 from django.utils.functional import cached_property
+from django.db.models.sql.subqueries import UpdateQuery
 
 from pgcrypto import (
     PGP_SYM_DECRYPT_SQL,
@@ -144,34 +147,76 @@ class PGPSymmetricKeyFieldMixin(PGPMixin):
     encrypt_sql = PGP_SYM_ENCRYPT_SQL
     decrypt_sql = PGP_SYM_DECRYPT_SQL
     cast_type = 'TEXT'
+    keys = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.key = None  # todo: perhaps default key?
 
     def pre_save(self, model_instance, add):
         """Save the original_value."""
         key_id = getattr(model_instance, "pk")
 
-        from django.db import connection
-        with connection.cursor() as cursor:
-            print("trying to fetch key for %s", (key_id,))
-            cursor.execute("select key from key_store where id = %s::text", (key_id,))
-            row = cursor.fetchone()
-            if row is None:
-                print("no key found for %s. Creating new one", (key_id,))
-                self.key = Encryption.generate_key()
-                r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
-                r.set(str(key_id), self.key, nx=True)
-            else:
-                print("Loading key from %s", (key_id,))
-                self.key = row[0]
+        # from django.db import connection
+        # with connection.cursor() as cursor:
+        #     print("trying to fetch key for %s", (key_id,))
+        #     cursor.execute("select key from key_store where id = %s::text", (key_id,))
+        #     row = cursor.fetchone()
+        #     if row is None:
+        #         print("no key found for %s. Creating new one", (key_id,))
+        #         key = Encryption.generate_key()
+        #         self.keys[key_id] = key
+        #         r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+        #         r.set(str(key_id), key, nx=True)
+        #     else:
+        #         print("Loading key from %s", (key_id,))
+        #         self.keys[key_id] = row[0]
 
         return super(PGPSymmetricKeyFieldMixin, self).pre_save(model_instance, add)
 
     def get_placeholder(self, value, compiler, connection):
         """Tell postgres to encrypt this field using PGP."""
-        val = self.encrypt_sql.format(self.key)
+        if compiler.query is UpdateQuery:
+            print("update query")
+        key_id = None
+        if hasattr(compiler.query, 'objs'):
+            # key = self.keys[compiler.query.objs[0].id]
+            key_id = compiler.query.objs[0].pk
+        elif hasattr(compiler.query, 'where'):
+            for child in compiler.query.where.children:
+                if child.lookup_name == 'exact':
+                    if hasattr(child.lhs, 'field') and hasattr(child.lhs.field, 'name') and child.lhs.field.name == 'id':
+                        key_id = child.rhs
+                    elif hasattr(child.rhs, 'field') and hasattr(child.rhs.field, 'name') and child.rhs.field.name == 'id':
+                        key_id = child.lhs
+                    elif hasattr(child.lhs, '__name__') and child.lhs.__name__ == 'UUID':
+                        # key = self.keys[child.lhs]
+                        key_id = child.lhs
+                    elif hasattr(child.rhs, '__name__') and child.rhs.__name__ == 'UUID':
+                        # key = self.keys[child.rhs]
+                        key_id = child.rhs
+        if key_id is None:
+            print("couldn't find key id!")
+
+        try:
+            key = self.keys[key_id]
+        except:
+            from django.db import connection
+            with connection.cursor() as cursor:
+                print("trying to fetch key for %s", (key_id,))
+                cursor.execute("select key from key_store where id = %s::text", (key_id,))
+                row = cursor.fetchone()
+                if row is None:
+                    print("no key found for %s. Creating new one", (key_id,))
+                    key = Encryption.generate_key()
+                    r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+                    r.set(str(key_id), key, nx=True)
+                else:
+                    print("Loading key from %s", (key_id,))
+                    key = row[0]
+        self.keys[key_id] = key
+
+        val = self.encrypt_sql.format(key)
+        # del self.keys[key_id]
         return val
 
     def get_decrypt_sql(self, connection):
